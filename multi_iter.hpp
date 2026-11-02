@@ -1,5 +1,5 @@
 #pragma once
-#include "edenlib/metaprogramming/concepts.hpp"
+#include "metaprogramming/concepts.hpp"
 #include "macros.hpp"
 #include "typedefs.hpp"
 
