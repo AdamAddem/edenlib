@@ -79,5 +79,5 @@
   #endif
 #endif
 #ifndef edenTriviallyRelocatable
-  #define edenTriviallyRelocatable(T) std::is_trivially_move_constructible_v<T> and std::is_trivially_destructible_v<T>
+  #define edenTriviallyRelocatable(T) (std::is_trivially_move_constructible_v<T> and std::is_trivially_destructible_v<T>)
 #endif

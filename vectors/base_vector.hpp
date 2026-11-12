@@ -48,13 +48,9 @@ static constexpr void copy_from_to(T const* edenRestrict from, T* edenRestrict t
 *   Small(default false):
 *     - Reduces the vector's size to 16 bytes on 64bit systems by storing a pointer and two u32s.
 *     - Will be disabled regardless if the system has a less than 8 byte pointer size.
-*   ExpansionMult(default 2):
-*     - The multiplier applied to the capacity everytime the vector must expand.
 */
-template <bool Small = false, u64_t ExpansionMult = 2>
-requires (ExpansionMult > 1)
+template <bool Small = false>
 struct base_vector_settings {
-  static constexpr u64_t expansion_mult = ExpansionMult;
   static constexpr bool is_small = sizeof(void*) >= 8 ? Small : false;
 };
 
@@ -64,9 +60,11 @@ class base_vector {
 protected:
   using value_type = T;
 
-  static constexpr u64_t expansion_mult = settings.expansion_mult;
-  static constexpr u64_t first_allocation_size = 1;
+  static constexpr u64_t first_allocation_size = 2;
   static constexpr auto is_small = settings.is_small;
+  using count_t = std::conditional_t<is_small, u32_t, sz_t>;
+
+  edenInlineNodiscardCXPR static count_t growCapacity(count_t n) noexcept { return n * 2; }
 
   static constexpr bool trivially_destructible = std::is_trivially_destructible_v<T>;
   static constexpr bool default_constructible = std::is_default_constructible_v<T>;
@@ -83,7 +81,6 @@ protected:
 #define call_derived static_cast<Derived*>(this)->
 #define call_derived_const static_cast<const Derived*>(this)->
 
-  using count_t = std::conditional_t<is_small, u32_t, sz_t>;
 
   constexpr void allocate_from_empty(count_t count) noexcept {
     assert(count not_eq 0);
@@ -140,7 +137,8 @@ protected:
     }
 
     // args may be from this vector's buffer, so we do this funny stuff
-    auto const count = call_derived capacity() * expansion_mult;
+    auto const old_cap = call_derived capacity();
+    auto const count = growCapacity(old_cap);
     auto const sz = call_derived size(); assert(count >= sz);
 
     T* new_buff = call_derived allocate(count);
@@ -655,13 +653,14 @@ public:
 
   template <bool PreserveGrowth = true>
   constexpr void move_append_range(std::span<T> values) {
+    auto const cap = capacity();
     auto const sz = size();
     auto const n = values.size();
 
     if constexpr (PreserveGrowth) {
-      auto const remaining_slots = capacity() - size();
+      auto const remaining_slots = cap - sz;
       if (n > remaining_slots)
-        expand_to( std::max(sz * expansion_mult, n) );
+        expand_to( std::max( growCapacity(cap), n) );
     }
     else {
       call_derived reserve(sz + n);
@@ -674,13 +673,14 @@ public:
   // values should not alias this vector
   template <bool PreserveGrowth = true>
   constexpr void copy_append_range(std::span<T const> values) {
+    auto const cap = capacity();
     auto const sz = size();
     auto const n = values.size();
 
     if constexpr (PreserveGrowth) {
-      auto const remaining_slots = capacity() - size();
+      auto const remaining_slots = cap - sz;
       if (n > remaining_slots)
-        expand_to( std::max(sz * expansion_mult, n) );
+        expand_to( std::max( growCapacity(cap), n) );
     }
     else
       call_derived reserve(sz + n);
@@ -704,7 +704,7 @@ public:
 
   // returns the index of an object located within this vector
   // parameter must be a valid pointer to an object located within this vector, otherwise UB
-  edenInlineCXPR sz_t index_in(T const* object_in_here) const noexcept { return object_in_here - m_begin; }
+  edenInlineCXPR sz_t index_of(T const* object_in_here) const noexcept { return object_in_here - m_begin; }
 
   // does not destroy or deallocate
   edenInlineCXPR void

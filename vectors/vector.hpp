@@ -5,8 +5,8 @@
 namespace eden {
 
 // See base_vector.hpp for settings description
-template<bool Small = false, u64_t ExpansionMult = 2>
-struct vector_settings { static constexpr base_vector_settings<Small, ExpansionMult> base_settings{}; };
+template<bool Small = false>
+struct vector_settings { static constexpr base_vector_settings<Small> base_settings{}; };
 
 // Mostly standard vector implementation
 template <class T, vector_settings settings = {}, allocator_for_c<T> Allocator = BasicAllocator<T>>

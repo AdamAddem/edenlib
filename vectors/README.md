@@ -8,9 +8,8 @@ std::move is always used, std::move_if_noexcept is not. <br>
 To customize each vector, pass the settings object into the respective vector's template argument as a non-type parameter. <br>
 I'd recommend that you create a type alias if using custom settings. <br>
 ```using my_customization = releasing_vector<char, releasing_vector_settings<false, true, 3>{}>; ```
-The common settings between most vectors is 'Small' and 'ExpansionMult':
+The common setting between most vectors is 'Small':
 - Small will have the vector use a T* and two u32s for size and capacity, shrinking the vector's size to 16 bytes and maximum capacity/size to the u32 maximum. 
-- ExpansionMult specifies the expansion rate of the vector after reaching capacity.
 A type 'count_t' is used. This type is u32_t if 'Small' is true, and sz_t if false. <br>
 Move constructors are defined for all vectors of the same type with compatible settings, whatever that may be for the specific vector. <br>
 Copy constructor / assignment is not defined to prevent accidental copies. Use the 'copy' method instead. <br>
@@ -25,7 +24,6 @@ Iterator invalidation rules are consistent with std::vector.
 Settings:
 - StoreSizeAndCapacity: Determines whether the header contains the buffer's size and capacity. When false and the allocator is stateless, does not create a header at all.
 - CString: Whether to enable string capabilities (will always release a null terminated array). Does not perform SSO.
-- Expansion multiplier.
 
 API:
 ```cpp
@@ -83,7 +81,6 @@ Settings:
 - Stability: The rate at which elements are moved towards the back (lower is faster). A setting of 1 will immediately swap elements with the backmost position.
 - PreserveBackmost: Will prevent any found elements from swapping into the backmost position. Useful if you need to preserve the most recent addition.
 - Small.
-- Expansion multiplier.
 
 API:
 ```cpp
@@ -160,13 +157,13 @@ Settings:
 
 ### Creating your own implementation 
 base_vector.hpp holds a basic vector implementation that is mostly typical, with the main caveat of no exception safety. <br>
-There exists a base_vector_settings class with two settings, Small and ExpansionMult (their effects are detailed in the header). <br>
+There exists a base_vector_settings class with the setting Small. <br>
 To create your own implementation, use the following format: <br>
 ```cpp
-template<u64_t custom_setting = 4, bool Small = false, u64_t ExpansionMult = 2>
+template<u64_t custom_setting = 4, bool Small = false>
 struct custom_vector_settings {
   static constexpr auto my_setting = custom_setting;
-  static constexpr eden::base_vector_settings<Small, ExpansionMult> base_settings{};
+  static constexpr eden::base_vector_settings<Small> base_settings{};
 };
 
 template <class T, auto settings = custom_vector_settings{}, eden::allocator_for_c<T> Allocator = eden::BasicAllocator<T>>

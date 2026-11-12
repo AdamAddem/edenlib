@@ -30,17 +30,15 @@ inline constexpr auto swap_map_predicate = [] (auto const& kv, auto const& key) 
 *  PreserveBackmost (default false):
 *     -When true, will prevent any found elements from swapping into the backmost position. Useful if you wish to preserve the most recent addition.
 *     -Note that some methods do not respect this when it would not make sense to.
-*  Small, ExpansionMult: (refer to base_vector.hpp)
 */
 template<u64_t Stability = 4,
          bool PreserveBackmost = false,
-         bool Small = false,
-         u64_t ExpansionMult = 2>
+         bool Small = false>
 requires (Stability >= 1)
 struct swap_vector_settings {
   static constexpr u64_t stability = Stability;
   static constexpr u64_t preserve_backmost = PreserveBackmost;
-  static constexpr base_vector_settings<Small, ExpansionMult> base_settings{};
+  static constexpr base_vector_settings<Small> base_settings{};
 };
 
 template <class T, swap_vector_settings settings = {}, allocator_for_c<T> Allocator = BasicAllocator<T>>

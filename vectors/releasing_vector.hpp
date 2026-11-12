@@ -19,16 +19,13 @@ namespace eden {
 *     - When false and the allocator is stateless, no header will be created at all, offering the same performance as std::vector.
 *  CString (default false):
 *     - Determines whether the vector gains extra string functionality, and will ensure the released string is null-terminated.
-*  ExpansionMult: (refer to base_vector.hpp)
 */
 template <bool StoreSizeAndCapacity = true,
-          bool CString = false,
-          u64_t ExpansionMult = 2>
-requires (ExpansionMult > 1)
+          bool CString = false>
 struct releasing_vector_settings {
   static constexpr bool is_string = CString;
   static constexpr bool store_size_and_capacity = StoreSizeAndCapacity;
-  static constexpr base_vector_settings<false, ExpansionMult> base_settings{};
+  static constexpr base_vector_settings<false> base_settings{};
 };
 
 template <class T, auto settings = releasing_vector_settings{}, allocator_for_c<T> Allocator = BasicAllocator<T>>
