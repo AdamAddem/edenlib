@@ -1,47 +1,30 @@
 #pragma once
 #include "typedefs.hpp"
-#include <type_traits>
 #include <concepts>
 
 namespace eden {
 
-namespace flags {
+namespace detail { struct FlagBase { protected: consteval FlagBase() noexcept = default; }; }
+template <class T> concept EdenFlag = std::derived_from<T, detail::FlagBase>;
 
-struct FlagBase {
-protected:
-  consteval FlagBase() noexcept = default;
-};
+namespace detail { struct ExclusivityFlagBase : FlagBase {}; }
+struct Exclusive : detail::ExclusivityFlagBase {};
+struct Inclusive : detail::ExclusivityFlagBase {};
+template <class T> concept ExclusivityFlag = std::derived_from<T, detail::ExclusivityFlagBase>;
 
-struct Exclusive : FlagBase {Exclusive() = delete;};
-struct Inclusive : FlagBase {Inclusive() = delete;};
+namespace detail { struct OrderingFlagBase : FlagBase {}; }
+template <class T> concept OrderingFlag = std::derived_from<T, detail::OrderingFlagBase>;
+struct Less : detail::OrderingFlagBase {};
+struct LessEQ : detail::OrderingFlagBase {};
+struct Greater : detail::OrderingFlagBase {};
+struct GreaterEQ : detail::OrderingFlagBase {};
 
-struct Less : FlagBase {Less() = delete;};
-struct LessThan : FlagBase {LessThan() = delete;};
-struct Greater : FlagBase {Greater() = delete;};
-struct GreaterThan : FlagBase {GreaterThan() = delete;};
+struct DoNotInitialize : detail::FlagBase {};
+static constexpr DoNotInitialize do_not_initialize;
 
-struct DoNotInitialize : FlagBase { consteval DoNotInitialize() noexcept = default; };
-inline constexpr DoNotInitialize do_not_initialize;
+template <sz_t N> requires (N > 0) struct ReserveInitial : detail::FlagBase {};
 
-struct End : FlagBase { consteval End() noexcept = default; };
-inline constexpr End end;
-
-template <sz_t N>
-requires (N > 0)
-struct ReserveInitial : FlagBase { consteval ReserveInitial() noexcept = default; };
-
-inline constexpr sz_t DynamicReserveInitial = sz_max;
-template <sz_t N = DynamicReserveInitial> inline constexpr ReserveInitial<N> reserve_initial;
-}
-
-template <class T>
-concept EdenFlag = std::derived_from<T, flags::FlagBase>;
-
-template <class T>
-concept ExclusivityFlag = std::is_same_v<T,flags::Exclusive> or std::is_same_v<T, flags::Inclusive>;
-
-template <class T>
-concept OrderingFlag =  std::is_same_v<T, flags::Less> or std::is_same_v<T, flags::LessThan> or
-                        std::is_same_v<T, flags::Greater> or std::is_same_v<T, flags::GreaterThan>;
+static constexpr sz_t DynamicReserveInitial = sz_max;
+template <sz_t N = DynamicReserveInitial> static constexpr ReserveInitial<N> reserve_initial;
 
 }

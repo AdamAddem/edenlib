@@ -388,14 +388,14 @@ public:
   edenInlineCXPR base_vector() noexcept = default;
 
   template <count_t N>
-  requires (N != flags::DynamicReserveInitial)
+  requires (N != DynamicReserveInitial)
   edenInlineCXPR explicit
-  base_vector(flags::ReserveInitial<N>) noexcept
+  base_vector(ReserveInitial<N>) noexcept
   requires using_base_allocation {
     allocate_from_empty(N);
   }
 
-  edenInlineCXPR base_vector(flags::ReserveInitial<flags::DynamicReserveInitial>, sz_t N) noexcept
+  edenInlineCXPR base_vector(ReserveInitial<DynamicReserveInitial>, sz_t N) noexcept
   requires using_base_allocation {
     allocate_from_empty(N);
   }

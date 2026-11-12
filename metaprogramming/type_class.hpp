@@ -1,8 +1,7 @@
 #pragma once
-#include "../string_utils.hpp"
+#include "../utils.hpp"
 #include "../typedefs.hpp"
 
-#include <array>
 #include <concepts>
 #include <cstring>
 #include <memory>

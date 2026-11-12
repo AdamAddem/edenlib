@@ -234,7 +234,7 @@ public:
   }
 
   template <count_t N>
-  explicit contiguous_soa_t(flags::ReserveInitial<N>) noexcept
+  explicit contiguous_soa_t(ReserveInitial<N>) noexcept
   { allocate_from_empty(N); }
 
   constexpr contiguous_soa_t(contiguous_soa_t&& other) noexcept

@@ -1,8 +1,8 @@
 #pragma once
 #include "macros.hpp"
+#include "utils.hpp"
 #include "metaprogramming/concepts.hpp"
 #include "metaprogramming/utilities.hpp"
-#include "string_utils.hpp"
 #include "typedefs.hpp"
 
 #include <cstring>
