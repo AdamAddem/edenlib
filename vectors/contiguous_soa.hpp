@@ -140,7 +140,8 @@ class contiguous_soa_t {
 
   detail::Slices<Ts...> slices;
 
-  using count_t = std::conditional_t<Small, u32_t, sz_t>;
+public: using count_t = std::conditional_t<Small, u32_t, sz_t>; private:
+
   count_t size_each{};
   count_t capacity_each{};
 

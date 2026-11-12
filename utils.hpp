@@ -73,8 +73,16 @@ enumLessThan(T lower, T higher) {
   return std::to_underlying(lower) < std::to_underlying(higher);
 }
 
-static constexpr struct{}addrof;
+static constexpr struct{
+  edenConst edenInlineNodiscardCXPR static auto operator()(auto& a) noexcept { return std::addressof(a); } 
+}addrof;
+edenConst edenInlineNodiscardCXPR auto* operator|(auto& a, decltype(addrof)) noexcept { return addrof(a); }
+
+static constexpr struct{
+  edenConst edenInlineNodiscardCXPR static auto operator()(pointer_c auto a) noexcept -> decltype(a) { return nullptr; }
+}nullptrof;
+
 edenConst edenInlineNodiscardCXPR
-auto* operator|(auto& a, decltype(addrof)) { return std::addressof(a); }
+auto operator|(pointer_c auto a, decltype(nullptrof)) { return nullptrof(a); }
 
 }
