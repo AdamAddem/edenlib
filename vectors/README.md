@@ -32,7 +32,7 @@ API:
 // methods identical to their std::vector counterparts are excluded.
     
 /*  Constructors / Assignment */
-    template <sz_t N> explicit (flags::ReserveInitial<N>); // pass in a flags::reserve_initial<N> instance 
+    template <sz_t N> explicit (ReserveInitial<N>); // pass in a reserve_initial<N> instance 
     explicit (released_ptr released_data) requires store_header;    // reclaims ownership over data previously released
     explicit (released_span released_data) requires store_header;
 /*  Constructors / Assignment */
@@ -140,11 +140,11 @@ Example Usage:
 ### contiguous_soa.hpp
 An implementation of vector emulating a 'struct of arrays', with the added bonus that all 'arrays' are contiguous on the same buffer. <br>
 All fields have their own seperate 'slice' within the larger buffer, and this slice operates exactly like a normal vector's buffer. <br>
-push_back is used very similarly to typical push_back, with the caveat that you must an element for each field. <br>
+push_back is used very similarly to typical push_back, with the caveat that you must push an element for each field. <br>
 emplace_back requires tuples of arguments for each element. <br>
 
 Settings:
-  - None (yet)
+  - Small
 
 ### multi_vector.hpp (WIP)
 An implementation of vector, similar to contiguous_soa, that allows for multiple types to be allocated on the same buffer. <br>
@@ -167,7 +167,7 @@ struct custom_vector_settings {
 };
 
 template <class T, auto settings = custom_vector_settings{}, eden::allocator_for_c<T> Allocator = eden::BasicAllocator<T>>
-class custom_vector : public eden::base_vector< true/false, T, custom_vector<T, settings, Allocator>, settings.base_settings, Allocator> {
+class custom_vector : public eden::base_vector<true/false, T, custom_vector<T, settings, Allocator>, settings.base_settings, Allocator> {
   static constexpr auto my_setting = settings.my_setting;
   
   using base = eden::base_vector<true/false, T, custom_vector, settings.base_settings, Allocator>; // Recommended for easy use of base_vector's members.

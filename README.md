@@ -3,7 +3,8 @@
 This is a collection of containers, functions, and utilities that i've created for one of many reasons:
 - The standard library doesn't provide a way of doing what I wanted (vectors)
 - The standard library has a limited or annoying implementation of what I wanted (owned, allocators)
-- Convenience (typedefs, lifetime_observer, enum_utils)
+- the standard library could be more performant (vectors, flat_map)
+- Convenience (type_aliases, lifetime_observer, utils)
 - Portability (macros)
 - Fun! (metaprogramming)
 
@@ -19,13 +20,10 @@ Here is a quick summary of the smaller headers:
   - Logs are formatted with each instance's ID and group number.
 - type_flags.hpp
   - Flags that can be used across my library for various purposes.
-- typedefs.hpp
+- type_aliases.hpp
   - Shortened type names for common types.
-- enum_utils.hpp
-  - Provides enumBetween, a utility allowing for compile or runtime checking of the ordering of enums.
-- string_utils.hpp
-  - Provides the TemplateString class, a way of creating and manipulating strings at compile time.
-  - Provides stpcpy, a portable version of POSIX's stpcpy.
+- multi_iter.hpp
+  - Allows easy iteration over multiple spans with the same size
 ---
 ###  owned.hpp
 owned_ptr, A version of unique_ptr without deletion. <br>
@@ -43,6 +41,18 @@ c_str specialization provided, with more utilities:
 - length()
 
 owned_span is also included in this header, with identical semantics but for span rather than unique_ptr.
+
+## utils.hpp
+Contains that which doesn't deserve its own header. <br>
+Notable utilities:
+  - areBitwiseEqual(ptr, ptr2);
+  - canBeRepresentedByFloat(T val); // returns if val can be converted to float perfectly
+  - T narrow(auto val); // equivalent to T(val) but asserts that no narrowing occurs
+  - addrof(obj), obj | addrof; // std::addressof wrapper with pipe operator
+  - nullptrof(ptr), ptr | nullptrof; // returns a nullptr value of the same type as ptr
+  - enumBetween<>(a, b, c); // determines if enum a's value is between enums b and c
+  - TemplateString{"Hello"}; // string wrapper to be used as a NTTP
+  - stpcpy, stpcpy_restrict; // implementation of POSIX's stpcpy
 
 ### metaprogramming/type_class.hpp
 Introduces the 'type' class, allowing for more convenient template meta-programming and the representation of types as first-class citizens. <br>

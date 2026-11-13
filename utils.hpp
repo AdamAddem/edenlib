@@ -170,32 +170,6 @@ stpcpy(char* dest, char const* src) noexcept {
 }
 
 edenNodiscardCXPR bool
-streq_restrict(const char* edenRestrict first, const char* edenRestrict second, sz_t len) noexcept {
-  assert(first); assert(second);
-  auto i{0uz};
-  while (i not_eq len) {
-    if (first[i] not_eq second[i])
-      return false;
-    ++i;
-  }
-  return true;
-}
-
-edenNodiscardCXPR bool
-streq_restrict(const char* edenRestrict first, const char* edenRestrict second) noexcept {
-  assert(first); assert(second);
-
-  auto i{0uz};
-  while (true) {
-    if (first[i] not_eq second[i])
-      return false;
-    if (first[i] == '\0')
-      return true;
-    ++i;
-  }
-}
-
-edenNodiscardCXPR bool
 streq(const char* first, const char* second, sz_t len) noexcept {
   auto i{0uz};
   while (i not_eq len) {
