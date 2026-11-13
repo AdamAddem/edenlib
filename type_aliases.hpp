@@ -4,6 +4,7 @@
 #include <limits>
 #include <memory>
 
+namespace eden { namespace type_aliases{
 using i8_t = std::int8_t;     static constexpr auto i8_max = std::numeric_limits<i8_t>::max();   static constexpr auto i8_min = std::numeric_limits<i8_t>::min();
 using u8_t = std::uint8_t;    static constexpr auto u8_max = std::numeric_limits<u8_t>::max();   static constexpr auto u8_min = std::numeric_limits<u8_t>::min();
 
@@ -26,3 +27,6 @@ using byte_t = std::byte; static constexpr auto full_byte = byte_t{0xFF}; static
 using align_t = std::align_val_t;
 
 using cstr_t = char const*;
+} using namespace type_aliases;
+
+}

@@ -1,14 +1,13 @@
 #pragma once
 #include "../macros.hpp"
 #include "../type_flags.hpp"
-#include "../typedefs.hpp"
+#include "../type_aliases.hpp"
 #include "../allocators/basic_allocator.hpp"
 #include "../metaprogramming/concepts.hpp"
 
 #include <type_traits>
 #include <memory>
 #include <span>
-#include <string>
 #include <cstring>
 
 namespace eden {
@@ -64,7 +63,7 @@ protected:
   static constexpr auto is_small = settings.is_small;
   using count_t = std::conditional_t<is_small, u32_t, sz_t>;
 
-  edenInlineNodiscardCXPR static count_t growCapacity(count_t n) noexcept { return n * 2; }
+  edenInlineNodiscardCXPR static count_t capacityIfGrown(count_t n) noexcept { return n * 2; }
 
   static constexpr bool trivially_destructible = std::is_trivially_destructible_v<T>;
   static constexpr bool default_constructible = std::is_default_constructible_v<T>;
@@ -75,9 +74,9 @@ protected:
 
   T* m_begin{};
 
-  using conditional_member_type = std::conditional_t<is_small, u32_t, T*>;
-  conditional_member_type m_size{};
-  conditional_member_type m_cap{};
+  using conditional_member_t = std::conditional_t<is_small, u32_t, T*>;
+  conditional_member_t m_size{};
+  conditional_member_t m_cap{};
 #define call_derived static_cast<Derived*>(this)->
 #define call_derived_const static_cast<const Derived*>(this)->
 
@@ -109,7 +108,7 @@ protected:
   constexpr void deallocate() noexcept {
     if (m_begin == nullptr) return;
     m_alloc.deallocate(m_begin,  call_derived capacity());
-    call_derived unsafe_zero_members();
+    call_derived zero_members(unsafe);
   }
 
   constexpr void destroy() noexcept {
@@ -133,12 +132,12 @@ protected:
   grow_and_emplace(Args&&... args) noexcept {
     if (m_begin == nullptr) {
       call_derived allocate_from_empty(first_allocation_size);
-      return call_derived emplace_back_unchecked(std::forward<Args>(args)...);
+      return call_derived emplace_back_unchecked(unsafe, std::forward<Args>(args)...);
     }
 
     // args may be from this vector's buffer, so we do this funny stuff
     auto const old_cap = call_derived capacity();
-    auto const count = growCapacity(old_cap);
+    auto const count = capacityIfGrown(old_cap);
     auto const sz = call_derived size(); assert(count >= sz);
 
     T* new_buff = call_derived allocate(count);
@@ -407,7 +406,7 @@ public:
   requires using_base_allocation {
     allocate_from_empty(sizeof...(values));
 
-    (emplace_back_unchecked(std::forward<decltype(values)>(values)), ...);
+    (emplace_back_unchecked(unsafe, std::forward<decltype(values)>(values)), ...);
   }
 
   constexpr explicit
@@ -456,17 +455,17 @@ public:
   }
 
   constexpr base_vector(base_vector&& other) noexcept
-  : m_alloc(std::move(other.m_alloc)), m_begin(other.m_begin), m_size(other.m_size), m_cap(other.m_cap) { other.unsafe_zero_members(); }
+  : m_alloc(std::move(other.m_alloc)), m_begin(other.m_begin), m_size(other.m_size), m_cap(other.m_cap) { other.zero_members(unsafe); }
 
   constexpr base_vector(Derived&& other) noexcept
-  : m_alloc(std::move(other.m_alloc)), m_begin(other.m_begin), m_size(other.m_size), m_cap(other.m_cap) { other.unsafe_zero_members(); }
+  : m_alloc(std::move(other.m_alloc)), m_begin(other.m_begin), m_size(other.m_size), m_cap(other.m_cap) { other.zero_members(unsafe); }
 
   constexpr base_vector&
   operator=(base_vector&& other) noexcept {
     call_derived destroy(); call_derived deallocate();
     m_alloc = std::move(other.m_alloc);
     m_begin = other.m_begin; m_size = other.m_size; m_cap = other.m_cap;
-    static_cast<Derived&>(other).unsafe_zero_members();
+    static_cast<Derived&>(other).zero_members(unsafe);
     return *this;
   }
 
@@ -475,7 +474,7 @@ public:
     call_derived destroy(); call_derived deallocate();
     m_alloc = std::move(other.m_alloc);
     m_begin = other.m_begin; m_size = other.m_size; m_cap = other.m_cap;
-    other.unsafe_zero_members();
+    other.zero_members(unsafe);
     return static_cast<Derived&>(*this);
   }
 
@@ -483,7 +482,7 @@ public:
   requires compatible_settings<other_settings> and same_c<Allocator, other_allocator>
   constexpr base_vector(base_vector<override_allocate, T, Derived, other_settings, other_allocator> &&other) noexcept
   : m_alloc(std::move(other.m_alloc)), m_begin(other.m_begin), m_size(other.m_size), m_cap(other.m_cap) {
-    static_cast<Derived&>(other).unsafe_zero_members();
+    static_cast<Derived&>(other).zero_members(unsafe);
   }
 
   template <base_vector_settings other_settings, allocator_for_c<T> other_allocator>
@@ -501,7 +500,7 @@ public:
     call_derived destroy(); call_derived deallocate();
     m_alloc = std::move(other.m_alloc);
     m_begin = other.m_begin; m_size = other.m_size; m_cap = other.m_cap;
-    static_cast<Derived&>(other).unsafe_zero_members();
+    static_cast<Derived&>(other).zero_members(unsafe);
     return static_cast<Derived&>(*this);
   }
 
@@ -626,12 +625,12 @@ public:
   requires std::is_constructible_v<T, Args...> {
     if (m_size == m_cap) [[unlikely]]
       return call_derived grow_and_emplace(std::forward<Args>(args)...);
-    return call_derived emplace_back_unchecked(std::forward<Args>(args)...);
+    return call_derived emplace_back_unchecked(unsafe, std::forward<Args>(args)...);
   }
 
   template <class ...Args>
   constexpr T&
-  emplace_back_unchecked(Args&&... args) noexcept
+  emplace_back_unchecked(UnsafeTag, Args&&... args) noexcept
   requires std::is_constructible_v<T, Args...> {
     assert(m_begin); assert(m_size not_eq m_cap);
     if constexpr (is_small) {
@@ -650,7 +649,6 @@ public:
   edenInlineCXPR void push_back(T&& value)      noexcept requires move_constructible { call_derived emplace_back(std::move(value)); }
 
   // values should not alias this vector
-
   template <bool PreserveGrowth = true>
   constexpr void move_append_range(std::span<T> values) {
     auto const cap = capacity();
@@ -660,7 +658,7 @@ public:
     if constexpr (PreserveGrowth) {
       auto const remaining_slots = cap - sz;
       if (n > remaining_slots)
-        expand_to( std::max( growCapacity(cap), n) );
+        expand_to( std::max(capacityIfGrown(cap), n) );
     }
     else {
       call_derived reserve(sz + n);
@@ -680,7 +678,7 @@ public:
     if constexpr (PreserveGrowth) {
       auto const remaining_slots = cap - sz;
       if (n > remaining_slots)
-        expand_to( std::max( growCapacity(cap), n) );
+        expand_to( std::max( capacityIfGrown(cap), n) );
     }
     else
       call_derived reserve(sz + n);
@@ -704,24 +702,21 @@ public:
 
   // returns the index of an object located within this vector
   // parameter must be a valid pointer to an object located within this vector, otherwise UB
-  edenInlineCXPR sz_t index_of(T const* object_in_here) const noexcept { return object_in_here - m_begin; }
+  edenInlineCXPR sz_t index_of(UnsafeTag, T const* object_in_here) const noexcept { return object_in_here - m_begin; }
 
   // does not destroy or deallocate
   edenInlineCXPR void
-  unsafe_zero_members() noexcept {
+  zero_members(UnsafeTag) noexcept {
     if constexpr (is_small) m_begin = nullptr, m_size = 0, m_cap = 0;
     else m_cap = m_size = m_begin = nullptr;
   }
 
-  edenInlineCXPR std::tuple<T*, conditional_member_type, conditional_member_type, Allocator>
-  unsafe_get_members() noexcept { return std::tuple{m_begin, m_size, m_cap, m_alloc}; }
-
-  edenInlineCXPR std::tuple<T*&, conditional_member_type&, conditional_member_type&, Allocator&>
-  unsafe_get_members_ref() noexcept { return std::tuple{m_begin, m_size, m_cap, m_alloc}; }
+  edenInlineCXPR std::tuple<T*&, conditional_member_t&, conditional_member_t&, Allocator&>
+  get_members(UnsafeTag) noexcept { return std::tuple{m_begin, m_size, m_cap, m_alloc}; }
 
   // does not destroy or deallocate
   edenInlineCXPR void
-  unsafe_set_members(T* new_begin, conditional_member_type new_size, conditional_member_type new_cap, Allocator new_alloc) noexcept {
+  set_members(UnsafeTag, T* new_begin, conditional_member_t new_size, conditional_member_t new_cap, Allocator new_alloc) noexcept {
     m_begin = new_begin;
     m_size = new_size;
     m_cap = new_cap;

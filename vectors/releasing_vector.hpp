@@ -34,7 +34,7 @@ requires
   and (Allocator::supports_allocate_raw == true)
 class releasing_vector : public base_vector<true, T, releasing_vector<T, settings, Allocator>, settings.base_settings, Allocator>  {
   
-  template < class O, auto other_settings, allocator_for_c<O> OA>
+  template <class O, auto other_settings, allocator_for_c<O> OA>
   requires 
     (other_settings.is_string ? (sizeof(O) == 1 and std::is_integral_v<O>) : true)
     and (OA::supports_allocate_raw == true)
@@ -49,7 +49,7 @@ class releasing_vector : public base_vector<true, T, releasing_vector<T, setting
 
   public: static constexpr bool is_string = settings.is_string; private:
   static constexpr bool store_size_and_capacity = settings.store_size_and_capacity;
-  static_assert( (store_size_and_capacity ? true : trivially_destructible), "Not storing size and capacity is only possible if the type is trivially destructible.");
+  static_assert(store_size_and_capacity ? true : trivially_destructible, "Not storing size and capacity is only possible if the type is trivially destructible.");
 
   static constexpr bool has_header = (not Allocator::stateless) or (store_size_and_capacity);
 
@@ -165,11 +165,11 @@ public:
   edenAlwaysInline explicit releasing_vector(released_span released_data) noexcept : releasing_vector(released_ptr(released_data.release())) {}
 
   template <sz_t N>
-  edenAlwaysInline explicit releasing_vector(flags::ReserveInitial<N>) noexcept {
+  edenAlwaysInline explicit releasing_vector(ReserveInitial<N>) noexcept {
     allocate_from_empty(N);
   }
 
-  edenAlwaysInline explicit releasing_vector(flags::ReserveInitial<flags::DynamicReserveInitial>, sz_t N) noexcept { allocate_from_empty(N); }
+  edenAlwaysInline explicit releasing_vector(ReserveInitial<DynamicReserveInitial>, sz_t N) noexcept { allocate_from_empty(N); }
 
   constexpr explicit
   releasing_vector(released_ptr released_data) noexcept
@@ -191,7 +191,7 @@ public:
   explicit releasing_vector(const char(&c_str)[N]) noexcept
   requires is_string {
     allocate_from_empty(N);
-    std::copy_n(c_str, N - 1, m_begin);
+    std::uninitialized_copy_n(c_str, N - 1, m_begin);
     m_size = m_begin + (N - 1);
   }
 
@@ -230,6 +230,7 @@ public:
   requires has_header {
     if (m_begin == nullptr) return released_ptr(nullptr);
 
+    // TODO: This is dumb and inefficient
     if constexpr (is_string) {
       if (this->size() == this->capacity())
         expand_to(this->capacity() + 1);
@@ -343,7 +344,7 @@ public:
     auto const sz = this->size();
     if ((N-1) not_eq sz) return false;
 
-    auto i{0uz};
+    decltype(sz) i{};
     while (i < sz) {
       if (m_begin[i] not_eq c_str[i])
         return false;
@@ -353,7 +354,7 @@ public:
     return true;
   }
 
-  edenInlineNodiscardCXPR bool operator==(std::string_view   sv)      const noexcept requires is_string { return to_stringview() == sv; }
+  edenInlineNodiscardCXPR bool operator==(std::string_view sv)        const noexcept requires is_string { return to_stringview() == sv; }
   edenInlineNodiscardCXPR bool operator==(std::string const& std_str) const noexcept requires is_string { return to_stringview() == std::string_view(std_str); }
 
 };

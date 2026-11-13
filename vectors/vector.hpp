@@ -1,5 +1,5 @@
 #pragma once
-#include "../typedefs.hpp"
+#include "../type_aliases.hpp"
 #include "base_vector.hpp"
 
 namespace eden {
@@ -10,7 +10,7 @@ struct vector_settings { static constexpr base_vector_settings<Small> base_setti
 
 // Mostly standard vector implementation
 template <class T, vector_settings settings = {}, allocator_for_c<T> Allocator = BasicAllocator<T>>
-class vector : public base_vector<false, T, vector<T, settings, Allocator>, settings.base_settings, Allocator> {
+class vector final : public base_vector<false, T, vector<T, settings, Allocator>, settings.base_settings, Allocator> {
   using base = base_vector<false, T, vector, settings.base_settings, Allocator>;
 public:
   using base::base;
@@ -24,7 +24,8 @@ public:
   // calls clear() so old T's get destroyed and the transmutated vector is empty.
   template <class X, template <class> class Allocator_>
   requires (sizeof(X) == sizeof(T) and alignof(X) == alignof(T))
-  vector<X, settings, Allocator_<X>>& transmutate_into_vector_of(this vector<T, settings, Allocator_<T>>&& v) noexcept {
+  vector<X, settings, Allocator_<X>>& 
+  transmutate_into_vector_of(this auto&& v) noexcept {
     using transmutated_type = vector<X, settings, Allocator_<X>>;
 
     auto const begin = v.m_begin;
@@ -33,9 +34,9 @@ public:
     auto const num_elements = v.size();
 
     v.clear();
-    v.unsafe_zero_members();
-    v.~vector();
-    auto& new_vec = * new (&v) transmutated_type;
+    v.zero_members(unsafe);
+    std::destroy_at(&v);
+    auto& new_vec = *std::construct_at<transmutated_type>(&v);
 
     new_vec.m_begin = std::start_lifetime_as_array<X>(begin, num_elements);
     if constexpr(settings.base_settings.is_small) {
@@ -47,7 +48,7 @@ public:
       new_vec.m_cap = (X*) cap;
     }
 
-    return *std::launder( &new_vec );
+    return *std::launder(&new_vec);
   }
 
 };

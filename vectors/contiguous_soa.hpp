@@ -1,7 +1,7 @@
 #pragma once
 #include "../metaprogramming/packs.hpp"
 #include "../type_flags.hpp"
-#include "../typedefs.hpp"
+#include "../type_aliases.hpp"
 
 #include <cstring>
 #include <utility>
@@ -152,9 +152,9 @@ public: using count_t = std::conditional_t<Small, u32_t, sz_t>; private:
   edenInlineNodiscard static void* 
   allocate(sz_t num_bytes) noexcept {
     if constexpr(doAlignedAllocation)
-      return (byte_t*)::operator new(num_bytes, (align_t) pack_data.biggest_alignment); 
+      return ::operator new(num_bytes, (align_t) pack_data.biggest_alignment); 
     else 
-      return (byte_t*)::operator new(num_bytes); 
+      return ::operator new(num_bytes); 
   }
   
   edenInlineCXPR static void 
@@ -289,7 +289,7 @@ public:
 
   template <class... ArgTuples> // should be tuples of arguments, one tuple per member
   requires (sizeof...(ArgTuples) == NumTs)
-  void emplace_back_unchecked(ArgTuples&&... args_for_each_element) noexcept {
+  void emplace_back_unchecked(UnsafeTag, ArgTuples&&... args_for_each_element) noexcept {
     assert(size_each != capacity_each);
     slices.add_to_end_unchecked(size_each, std::forward<ArgTuples>(args_for_each_element)...);
     ++size_each;
@@ -305,8 +305,9 @@ public:
 
   template <class... Args>
   edenAlwaysInline void 
-  push_back_unchecked(Args&&... new_elements) noexcept { 
+  push_back_unchecked(UnsafeTag, Args&&... new_elements) noexcept { 
     return emplace_back_unchecked(
+      unsafe,
       std::forward_as_tuple(std::forward<Args>(new_elements))...
     ); 
   }
@@ -330,7 +331,7 @@ public:
   // growth_handler is also responsible for the destruction of the old elements
   // growth_handler is NOT responsible for allocation
   edenInlineCXPR void
-  unsafe_perform_manual_growth(std::invocable< detail::Slices<Ts...>&, detail::Slices<Ts...>&> auto&& growth_handler) noexcept {
+  perform_manual_growth(UnsafeTag, std::invocable< detail::Slices<Ts...>&, detail::Slices<Ts...>& > auto&& growth_handler) noexcept {
     if (slices.buffer_begin_slice() == nullptr) {
       allocate_from_empty();
       return;
@@ -351,11 +352,11 @@ public:
   
   // will emplace args into one slice but will not update the internal 'size' counter
   // you cannot call any normal methods after this besides to_span, data, front, empty, or the size/capacity methods until you either:
-  // - call unsafe_pop_back_one on this same index before destruction
-  // - call unsafe_have_emplaced_all after calling this function or manually constructing the other types at their ends
+  // - call pop_back_one on this same index before destruction
+  // - call have_emplaced_all after calling this function or manually constructing the other types at their ends
   // args may not alias this vector
   template <sz_t IDX>
-  void unsafe_emplace_back_one(auto&&... args) noexcept {
+  void emplace_back_one(UnsafeTag, auto&&... args) noexcept {
     if (size_each == capacity_each) {
       if (slices.buffer_begin_slice() == nullptr) allocate_from_empty();
       else expand_to( grow(capacity_each) );
@@ -367,21 +368,21 @@ public:
 
   // see above, args may alias this vector
   template <sz_t IDX>
-  void unsafe_emplace_back_one_unchecked(auto&&... args) noexcept {
+  void emplace_back_one_unchecked(UnsafeTag, auto&&... args) noexcept {
     auto const slice = slices.template get<IDX>();
     std::construct_at(slice + size_each, std::forward<decltype(args)>(args)...);
   }
 
   // read above
   template <sz_t IDX>
-  void unsafe_pop_back_one() noexcept { 
+  void pop_back_one(UnsafeTag) noexcept { 
     assert(not empty());
     auto slice = slices.template get<IDX>();
     std::destroy_at(slice + size_each - 1);
   }
 
   // read above
-  void unsafe_have_emplaced_all() noexcept { ++size_each; }
+  void have_emplaced_all(UnsafeTag) noexcept { ++size_each; }
 
 };
 

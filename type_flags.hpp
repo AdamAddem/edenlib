@@ -1,5 +1,5 @@
 #pragma once
-#include "typedefs.hpp"
+#include "type_aliases.hpp"
 #include <concepts>
 
 namespace eden {
@@ -19,12 +19,12 @@ struct LessEQ : detail::OrderingFlagBase {};
 struct Greater : detail::OrderingFlagBase {};
 struct GreaterEQ : detail::OrderingFlagBase {};
 
-struct DoNotInitialize : detail::FlagBase {};
-static constexpr DoNotInitialize do_not_initialize;
+struct DoNotInitialize : detail::FlagBase {}; static constexpr DoNotInitialize do_not_initialize;
+struct UnsafeTag : detail::FlagBase {}; static constexpr UnsafeTag unsafe;
 
-template <sz_t N> requires (N > 0) struct ReserveInitial : detail::FlagBase {};
+template <sz_t N> struct ReserveInitial : detail::FlagBase {};
 
-static constexpr sz_t DynamicReserveInitial = sz_max;
+static constexpr sz_t DynamicReserveInitial = 0;
 template <sz_t N = DynamicReserveInitial> static constexpr ReserveInitial<N> reserve_initial;
 
 }

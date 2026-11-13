@@ -1,6 +1,6 @@
 #pragma once
 #include "metaprogramming/type_class.hpp"
-#include "typedefs.hpp"
+#include "type_aliases.hpp"
 
 #include <format>
 #include <string>
@@ -9,7 +9,7 @@
 namespace eden {
 
   template<sz_t N>
-  class LifetimeObserver : type<LifetimeObserver<N>, append_number_to_literal<N, "LifetimeObserver">> {
+  class LifetimeObserver : type< LifetimeObserver<N>, append_number_to_literal<N, "LifetimeObserver"> > {
     inline static constinit std::vector<std::string> lifetime_log;
     inline static constinit sz_t idgen{1};
 
