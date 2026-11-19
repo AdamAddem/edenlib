@@ -5,7 +5,6 @@
 
 namespace eden::packs {
 
-
 namespace detail {
 
 template <class T, class First, class... Rest>
@@ -46,33 +45,30 @@ template <sz_t IDX, class... Ts>
 using type_at_idx = decltype(detail::type_at_idx_impl<IDX, Ts...>())::type;
 
 template <class... Ts>
-struct PackData {
+class PackData {
   static constexpr auto NumTs = sizeof...(Ts);
   static constexpr auto biggest_alignment = max_align_in_pack<Ts...>;
-  sz_t sizes[NumTs];
   sz_t total_size{};
   sz_t biggest_size{};
   
+  sz_t sizes[NumTs];
   sz_t alignments[NumTs];
   sz_t typeidx_to_alignidx[NumTs]; // maps a T's index in Ts to its index in ATs, where ATs is the parameter pack Ts sorted from biggest to smallest alignment
   sz_t alignidx_to_typeidx[NumTs]; // maps an index in AT's back to an index in Ts
   sz_t alignidx_to_offset[NumTs];  // maps an index in AT's to its byte offset in a std::tuple<ATs...>
+public:
 
   // don't ask me how any of this works I totally forgot
   consteval PackData() noexcept {
 
-    // initialize sizes
-    {
-      detail::fill_with_type_sizes<Ts...>(sizes);
-      for(auto size : sizes) {
-        biggest_size = std::max(biggest_size, size);
-        total_size += size;
-      }
-    }
-    
+    detail::fill_with_type_sizes<Ts...>(sizes);
+    for(auto size : sizes)
+      biggest_size = std::max(biggest_size, size),
+      total_size += size;
+  
     detail::fill_with_type_alignments<Ts...>(alignments);
 
-    static constexpr auto alignments_count_sz = std::bit_width(biggest_alignment);
+    static constexpr auto alignments_count_sz = std::bit_width( biggest_alignment );
     sz_t alignments_count[ alignments_count_sz ]{};
     for(sz_t i{}; i<NumTs; ++i)
       alignments_count[ std::bit_width( alignments[i] ) - 1 ] += 1;
@@ -100,6 +96,16 @@ struct PackData {
     for(i = 1; i<NumTs; ++i) alignidx_to_offset[i] = alignidx_to_offset[i-1] + sizes[ alignidx_to_typeidx[i-1] ];
   }
 
+  consteval sz_t biggestAlignment() const noexcept { return biggest_alignment; }
+  consteval sz_t totalSize() const noexcept { return total_size; }
+  consteval sz_t biggestSize() const noexcept { return biggest_size; }
+  
+  edenInlineNodiscardCXPR sz_t typeIDXToSize(sz_t idx) const noexcept { return sizes[idx]; }
+  edenInlineNodiscardCXPR sz_t typeIDXToAlignment(sz_t idx) const noexcept { return alignments[idx]; }
+  edenInlineNodiscardCXPR sz_t typeIDXToAlignIDX(sz_t idx) const noexcept { return typeidx_to_alignidx[idx]; }
+  edenInlineNodiscardCXPR sz_t alignIDXToTypeIDX(sz_t idx) const noexcept { return alignidx_to_typeidx[idx]; }
+  edenInlineNodiscardCXPR sz_t alignIDXToOffset(sz_t idx) const noexcept { return alignidx_to_offset[idx]; }
+  edenInlineNodiscardCXPR sz_t typeIDXToOffset(sz_t idx) const noexcept { return alignIDXToOffset( typeIDXToAlignIDX(idx) ); }
 };
 
 

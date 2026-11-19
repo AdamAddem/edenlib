@@ -100,7 +100,7 @@ public:
     if(arr.size() == arr.capacity()) {
       arr.perform_manual_growth(
         unsafe,
-        [&] (detail::Slices<Key, count_t, Value>& old_slices, detail::Slices<Key, count_t, Value>& new_slices) {
+        [&] (detail::Slices<Key, count_t, Value> const& old_slices, detail::Slices<Key, count_t, Value>& new_slices) {
           auto const old_keys = old_slices.template get<KeyTypeIndex>();
           auto const new_keys = new_slices.template get<KeyTypeIndex>();
           if constexpr(KeyTriviallyRelocatable) {
